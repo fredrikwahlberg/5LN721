@@ -8,7 +8,7 @@ import random
 
 # TODO Implement fallback models
 # TODO Add cleaning function
-
+# TODO Add test code for union_update
 
 def character_tokenizer(text):
     for t in text:
@@ -25,9 +25,11 @@ def ordered_ngrams(model):
     for i in np.argsort(v)[::-1]:
         yield (keys[i], v[i])
 
+
 class grouping_tokenizer:
     def __init__(self, order):
-        assert order > 0 and order == int(order), "order must be a strictly positive integer"
+        assert order > 0 and order == int(order), \
+            "order must be a strictly positive integer"
         self.order_ = order
 
     def tokenize(self, words):
@@ -40,7 +42,7 @@ class grouping_tokenizer:
 
     def __repr__(self):
         return "grouping tokenizer of order %i" % (self.order_)
-    
+
 
 class NGramModel:
     def __init__(self, tokenized_text, order=1):
@@ -162,6 +164,15 @@ class NGramModel:
             else:
                 ret._ngrams[key] = other._ngrams[key]
         return ret
+
+    def union_update(self, other):
+        """Updates the model with data from the arg model."""
+        for key in other._ngrams.keys():
+            if key in self._ngrams.keys():
+                self._ngrams[key] += other._ngrams[key]
+            else:
+                self._ngrams[key] = other._ngrams[key]
+        return self
 
     def intersect(self, other):
         ret = self.copy()

@@ -8,9 +8,6 @@ import random
 
 # TODO Implement fallback models
 # TODO Add cleaning function
-# TODO Add test code for union_update
-# TODO Add a codebook method
-# TODO Use dictionary as codebook for faster vector creation
 
 
 def character_tokenizer(text):
@@ -46,7 +43,7 @@ class grouping_tokenizer:
     def __repr__(self):
         return "grouping tokenizer of order %i" % (self.order_)
 
-
+#%%
 class NGramModel:
     def __init__(self, tokenized_text, order=1):
         """
@@ -123,8 +120,8 @@ class NGramModel:
         for key in self.keys():
             assert key in codebook, "Key not in %s" % codebook
             ret[codebook[key]] = self._ngrams[key]
-        if self.entries_ > 0:
-            ret /= self.entries_
+        if np.sum(ret) > 0:
+            ret /= np.sum(ret)
         return ret
 
     #%% Prediction
@@ -290,7 +287,7 @@ et neque."""
     print(m, "predicts:", "".join(m.predict_sequence(100)))
 
     # %%
-    print("Equal models from generated text")
+    print("'Equal' models from generated text")
     m1 = NGramModel(character_tokenizer(text), 1)
     assert len(m1.keys()) == len(set(text))
     generated_text = "".join(m.predict_sequence(100000))

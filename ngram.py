@@ -9,6 +9,9 @@ import random
 # TODO Implement fallback models
 # TODO Add cleaning function
 # TODO Add test code for union_update
+# TODO Add a codebook method
+# TODO Use dictionary as codebook for faster vector creation
+
 
 def character_tokenizer(text):
     for t in text:
@@ -51,6 +54,7 @@ class NGramModel:
         self._ngrams = dict()
         self._order = order
         self._pred_distr = None
+        self._codebook = None
 #        self._fallback = None
 #        if order >= 2:
 #            self._fallback = NGramModel([], order-1)
@@ -70,8 +74,14 @@ class NGramModel:
                     self._ngrams[key] += 1
 #        if self._fallback is not None:
 #            self._fallback.update_model(tokenized_text)
-        self._pred_distr = None
+        self._data_changed()
 
+    def _data_changed(self):
+        """Call this when model data is changed"""
+        self._pred_distr = None
+        self._codebook = None
+    
+    #%% Data getters/setters
     def keys(self):
         return list(self._ngrams.keys())
 
@@ -93,19 +103,31 @@ class NGramModel:
         """Returns the number of unique keys in the model"""
         return len(self._ngrams.keys())
 
+    #%% Vectorization
+    def codebook(self):
+        if self._codebook is None:
+            self._codebook = {key:index for index, key in enumerate(self.keys())}
+        return self._codebook
+
     def vectorize(self, codebook=None):
         """Returns the a feature vector using the space spanned by
         the codebook argument"""
         if codebook is None:
-            codebook = self._ngrams.keys()
+            codebook = self.codebook()
+        elif type(codebook) is list:
+            codebook = {word:index for index, word in enumerate(codebook)}
+        else:
+            assert type(codebook) is dict, "The codebook must be a dictionary or list"
         ret = np.zeros(len(codebook))
-        for i, key in enumerate(codebook):
-            if key in self._ngrams.keys():
-                ret[i] = self._ngrams[key]
+        #for i, key in enumerate(codebook):
+        for key in self.keys():
+            assert key in codebook, "Key not in %s" % codebook
+            ret[codebook[key]] = self._ngrams[key]
         if self.entries_ > 0:
             ret /= self.entries_
         return ret
 
+    #%% Prediction
     def predict(self, given=None):
         if self._pred_distr is None:
             self._pred_distr = dict()
@@ -155,6 +177,7 @@ class NGramModel:
             ret.extend(p)
         return ret
 
+    #%% Modification operations
     def union(self, other):
         """Returns the union of two ngram models as a new model."""
         ret = self.copy()
@@ -163,6 +186,7 @@ class NGramModel:
                 ret._ngrams[key] += other._ngrams[key]
             else:
                 ret._ngrams[key] = other._ngrams[key]
+        ret._data_changed()
         return ret
 
     def union_update(self, other):
@@ -172,6 +196,7 @@ class NGramModel:
                 self._ngrams[key] += other._ngrams[key]
             else:
                 self._ngrams[key] = other._ngrams[key]
+        self._data_changed()
         return self
 
     def intersect(self, other):
@@ -181,6 +206,7 @@ class NGramModel:
                 ret._ngrams.pop(key)
             else:
                 ret._ngrams[key] = other._ngrams[key]
+        ret._data_changed()
         return ret
 
     def rel_comp(self, other):
@@ -190,6 +216,7 @@ class NGramModel:
         for key in other._ngrams.keys():
             if key in ret._ngrams.keys():
                 ret._ngrams.pop(key)
+        ret._data_changed()
         return ret
 
     def subtract(self, other):
@@ -202,7 +229,7 @@ class NGramModel:
         from copy import deepcopy
         return deepcopy(self)
 
-
+#%%
 if __name__ == '__main__':
     print("Tokenizer")
     print(list(character_tokenizer("abcde")))

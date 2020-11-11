@@ -85,3 +85,4 @@ if __name__ == '__main__':
     assert cer(t1, t2)[0] == 5
     assert cer(t1, t3)[0] == 33
     assert cer("spam spam", "spam spam")[0] == 0
+    print("Tests ran successfully")

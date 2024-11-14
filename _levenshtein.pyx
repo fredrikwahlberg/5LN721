@@ -11,11 +11,11 @@ cimport cython
 __all__ = ['_levenshtein_distance']
 
 def _levenshtein_distance(lhs, rhs):
-    cdef np.ndarray[np.int_t, ndim=2, mode="c"] cost_matrix
+    cdef np.ndarray[long, ndim=2, mode="c"] cost_matrix
     cdef int i = 0, j = 0, substitution, insertion, deletion, cost
     cdef int m = len(lhs), n = len(rhs)
 
-    cost_matrix = np.zeros((m+1, n+1), dtype=np.int)
+    cost_matrix = np.zeros((m+1, n+1), dtype=int)
 
     for i in range(1, cost_matrix.shape[0]):
         cost_matrix[i][0] = i
